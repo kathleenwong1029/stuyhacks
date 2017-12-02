@@ -1,6 +1,9 @@
 patches-own[current]
-globals[direction dead]
+globals[direction dead winner pass1 eaten winner2 pass2]
 turtles-own [falling?]
+breed[things thing]
+breed[monsters monster]
+breed[sharks shark]
 
 to setup
   ca
@@ -37,18 +40,6 @@ to d
   fd 1]
 end
 
-to setuptest
-  ca
-  ask patches [set pcolor blue]
-  ask patch 0 0 [set pcolor green]
-  ask patch 1 0 [set pcolor green]
-  ask patch 2 0 [set pcolor green]
-  ask patch 0 10 [set pcolor grey]
-  ask patch 1 10 [set pcolor grey]
-  ask patch 2 10 [set pcolor grey]
-  set direction 0
-end
-
 to shiftright
   every 0.05[
   ask patches [
@@ -68,7 +59,7 @@ to shiftleft
 end
 
 to shift
-  ifelse dead != true [every 0.1 [
+  ifelse dead != true and winner != true [every 0.1 [
   ifelse direction = 0 [shiftleft] [shiftright]]
   every 0.5 [
   ifelse direction = 0 [set direction 1] [set direction 0]]
@@ -77,7 +68,8 @@ to shift
     win
     ask turtles [if [pcolor] of patch-here = 13 or [pcolor] of patch-here = 22.7 [set dead true die]]
   ]]
-  [user-message (word "Oh no! You died!") stop]
+  [if dead = true [user-message (word "Oh no! You died!") stop]
+    if winner = true [stop]]
 end
 
 to fall
@@ -97,13 +89,64 @@ end
 
 to win
   if [xcor] of turtle 0 >= 50 and [xcor] of turtle 0 <= 54 and [ycor] of turtle 0 >= -17 and [ycor] of turtle 0 <= -14
-  [user-message (word ("Congratulations! You passed level one!")) fakesetup]
+  [user-message (word ("Congratulations! You passed level one! \nPassword for next level: spiffy")) fakesetup set winner true stop]
+end
+
+to check
+  set pass1 user-input "Please enter the password for level 2"
+  ifelse pass1 = "spiffy" [fakesetup] [setup]
 end
 
 to fakesetup
   ca
-  create-turtles 1
-  ask turtles [set size 5]
+  set eaten false
+  resize-world -85 25 -22 28
+  import-pcolors "level2.png"
+  create-things 1
+  ask things [set size 10 set ycor (-20 + random(40)) set xcor -82 set shape "speggie"]
+  create-monsters 1
+  ask monsters [set size 25 set xcor 13 set ycor 5 set heading 0 set shape "turty"]
+  create-sharks 1
+  ask sharks [set size 8 set heading 135 set shape "sharky"]
+end
+
+to level2
+  ifelse eaten = false and winner2 != true [every 5[
+    create-sharks 1
+    ask sharks[set shape "sharky" set size 8 set heading 270]
+  ]
+  every 0.2[
+    ask sharks [left random (10) right random (10) fd 1]
+  ]
+  every 0.0001 [seesharks win2]]
+  [if eaten = true [user-message (word "Oh no! You've been eaten by a shark!") fakesetup stop]
+    if winner2 = true [stop]]
+end
+
+to seesharks
+  ask things [if any? sharks in-radius 5 [set eaten true]]
+end
+
+to win2
+  if [xcor] of thing 0 >= 1 and [xcor] of thing 0 <= 5 and [ycor] of thing 0 >= 1 and [ycor] of thing 0 <= 3
+  [user-message (word "Congratulations! You passed level two! \nPassword for next level: marvelous") setup3 set winner2 true stop]
+end
+
+to check2
+  set pass2 user-input "Please enter the password for level 3"
+  ifelse pass2 = "marvelous" [setup3] [fakesetup]
+end
+
+to setup3
+  ca
+  import-pcolors "space.png"
+  resize-world -55 55 -25 25
+  create-things 1
+  ask things[setxy 0 -20 set size 10 set shape "beggie"]
+end
+
+to ballwithpeg
+  every .2[fd 1]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -134,10 +177,10 @@ ticks
 30.0
 
 BUTTON
-27
-30
-154
-63
+38
+75
+146
+108
 set up level one
 setup
 NIL
@@ -145,16 +188,16 @@ NIL
 T
 OBSERVER
 NIL
-C
+NIL
 NIL
 NIL
 1
 
 BUTTON
-15
-201
-70
-234
+6
+476
+61
+509
 left
 l
 NIL
@@ -168,10 +211,10 @@ NIL
 1
 
 BUTTON
-120
-201
-175
-234
+129
+476
+184
+509
 right
 r
 NIL
@@ -185,10 +228,10 @@ NIL
 1
 
 BUTTON
-74
-154
-129
-187
+68
+432
+123
+465
 up
 u
 NIL
@@ -202,10 +245,10 @@ NIL
 1
 
 BUTTON
-65
-248
-130
-281
+68
+476
+123
+509
 down
 d
 NIL
@@ -219,11 +262,11 @@ NIL
 1
 
 BUTTON
-28
-368
-91
-401
-go
+61
+113
+124
+146
+go!
 shift
 T
 1
@@ -236,27 +279,27 @@ NIL
 1
 
 BUTTON
-28
-79
-123
-112
-fake setup
-fakesetup
+36
+173
+142
+206
+set up level two
+check
 NIL
 1
 T
 OBSERVER
 NIL
-F
+NIL
 NIL
 NIL
 1
 
 BUTTON
-66
-305
-129
-338
+63
+365
+126
+398
 jump
 jumpy
 NIL
@@ -269,26 +312,90 @@ NIL
 NIL
 1
 
+BUTTON
+58
+214
+127
+247
+go!
+level2
+T
+1
+T
+OBSERVER
+NIL
+G
+NIL
+NIL
+1
+
+BUTTON
+30
+275
+149
+308
+set up level three
+check2
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+TEXTBOX
+53
+155
+203
+173
+-------------
+11
+0.0
+1
+
+TEXTBOX
+52
+254
+202
+272
+-------------
+11
+0.0
+1
+
+TEXTBOX
+13
+16
+183
+72
+welcome to the best game ever! for instructions, please head on over to the info tab! enjoy!!
+11
+95.0
+1
+
 @#$#@#$#@
 ## WHAT IS THIS?
 
-This is a game!
+This is the most important game you'll ever play.
 
-## HOW IT WORKS
+## LEVEL ONE
 
-(what rules the agents use to create the overall behavior of the model)
+In Level One, your goal is to get to the treasure chest on the lower right corner of the screen!
+You can use the J key to jump, the A key to go left, and the D key to go right.
+You can't fall into the lava!
 
-## HOW TO USE IT
+## LEVEL TWO
 
-(how to use the model, including a description of each of the items in the Interface tab)
+In Level Two, your goal is to get to the turtle's mouth!
+You can use the A key to go left, the D key to go right, the W key to go up, and the S key to go down.
+Don't get eaten by a shark!
 
-## THINGS TO NOTICE
+## LEVEL THREE
 
 (suggested things for the user to notice while running the model)
-
-## THINGS TO TRY
-
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
 
 ## EXTENDING THE MODEL
 
@@ -304,7 +411,7 @@ This is a game!
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+this dumbass kathleen
 @#$#@#$#@
 default
 true
@@ -320,6 +427,42 @@ arrow
 true
 0
 Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
+
+balloon
+true
+0
+Line -1 false 150 135 150 255
+Circle -13791810 true false 105 45 90
+Polygon -13791810 true false 159 100 132 139 169 139 150 110
+
+beggie
+false
+0
+Polygon -16777216 false false 89 150 137 168 183 160 213 142 229 170 216 193 202 212 165 225 152 225 132 225 116 220 106 214 95 202 76 170
+Circle -955883 true false 109 41 82
+Circle -13791810 true false 75 75 152
+Circle -1 true false 106 134 91
+Circle -16777216 true false 104 107 6
+Circle -16777216 true false 187 106 6
+Polygon -1184463 true false 135 130 163 129 150 150
+Polygon -955883 true false 110 214 95 226 109 223 109 237 117 226 124 234 122 218
+Polygon -955883 true false 194 212 209 224 195 221 195 235 187 224 180 232 182 216
+Polygon -955883 true false 109 85 136 98 162 99 190 84 171 64 129 70
+Polygon -13791810 true false 108 86 122 84 137 42 120 48 110 65
+Polygon -13840069 true false 135 43 148 39 142 63 141 83 123 83
+Polygon -2064490 true false 147 39 156 40 157 82 142 83 141 64
+Polygon -2674135 true false 157 40 171 45 171 66 171 83 157 81
+Polygon -1184463 true false 172 46 181 55 182 80 170 82
+Polygon -8630108 true false 182 79 192 79 190 64 181 53
+Polygon -13791810 true false 91 119 67 146 56 194 81 165
+Polygon -13791810 true false 211 120 236 140 247 188 222 159
+Line -1 false 252 66 240 173
+Circle -2064490 true false 216 6 77
+Polygon -1 true false 226 131 236 141 246 187 224 162 218 143 220 127
+Polygon -1 true false 75 137 65 147 58 192 77 168 83 149 75 133
+Polygon -1 true false 74 141 107 161 190 157 214 146 221 129 228 165 216 196 202 213 189 217 173 225 148 225 127 225 107 213 105 211 93 205 89 195 85 188 78 173 76 172 74 149
+Polygon -16777216 false false 222 125 212 144 226 166 245 186 237 140
+Polygon -16777216 false false 76 134 89 151 75 173 56 193 64 147
 
 box
 false
@@ -480,7 +623,7 @@ Circle -13345367 true true 75 73 152
 Circle -1 true false 106 134 91
 Circle -16777216 true false 104 107 6
 Circle -16777216 true false 187 106 6
-Polygon -1184463 true false 135 130 163 129 150 150
+Polygon -1184463 true false 139 129 160 129 151 146
 Polygon -955883 true false 110 214 95 226 109 223 109 237 117 226 124 234 122 218
 Polygon -955883 true false 194 212 209 224 195 221 195 235 187 224 180 232 182 216
 Polygon -955883 true false 109 85 136 98 162 99 190 84 171 64 129 70
@@ -519,6 +662,19 @@ Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
 
+sharky
+false
+0
+Polygon -13791810 true false 21 160 7 146 24 143 -4 141 13 129 76 105 119 101 191 114 241 130 255 123 289 90 286 109 271 141 286 172 285 182 252 162 237 158 231 158 218 153 209 153 165 159 85 177
+Polygon -13791810 true false 102 172 149 177 186 176 132 165
+Polygon -13791810 true false 112 108 128 83 140 74 144 76 141 97 147 112
+Circle -16777216 true false 47 124 8
+Line -16777216 false 78 134 78 150
+Line -16777216 false 83 134 83 150
+Line -16777216 false 88 134 88 150
+Polygon -13791810 true false 222 125 238 118 237 130
+Polygon -13791810 true false 179 157 195 161 199 156 194 152
+
 sheep
 false
 15
@@ -534,6 +690,26 @@ Rectangle -1 true true 65 221 80 296
 Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
 Polygon -7500403 true false 276 85 285 105 302 99 294 83
 Polygon -7500403 true false 219 85 210 105 193 99 201 83
+
+speggie
+false
+12
+Circle -13791810 true false 75 73 152
+Circle -1 true false 106 134 91
+Polygon -1184463 true false 139 129 160 129 151 146
+Polygon -955883 true false 110 214 95 226 109 223 109 237 117 226 124 234 122 218
+Polygon -955883 true false 194 212 209 224 195 221 195 235 187 224 180 232 182 216
+Polygon -13791810 true false 91 119 67 146 56 194 81 165
+Polygon -13791810 true false 211 120 236 140 247 188 222 159
+Polygon -14835848 true false 98 92 124 77 148 72 174 75 203 93 176 89 131 89 116 89
+Circle -1 true false 109 96 33
+Circle -16777216 true false 114 102 22
+Circle -1 true false 160 95 33
+Circle -16777216 true false 165 100 22
+Rectangle -1 true false 140 107 163 115
+Polygon -1 true false 92 101 112 107 112 117 84 108
+Polygon -1 true false 209 100 189 106 189 116 217 107
+Polygon -16777216 true false 78 173 124 198 190 196 227 168 215 194 194 214 172 226 147 226 128 223 113 215 98 207 84 188
 
 square
 false
@@ -605,6 +781,56 @@ Polygon -10899396 true false 105 90 75 75 55 75 40 89 31 108 39 124 60 105 75 10
 Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169 65 172 87
 Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
 Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
+
+turty
+true
+0
+Rectangle -10899396 true false 76 140 89 177
+Circle -13840069 true false 4 118 85
+Polygon -13840069 true false 237 117 266 92 287 86 299 104 285 117 243 139
+Polygon -13840069 true false 213 60 174 49 154 49 139 63 130 93 154 94 162 76 173 69 186 65
+Polygon -13840069 true false 217 245 174 262 154 262 139 248 129 223 138 213 152 229 175 243 191 244
+Polygon -13840069 true false 241 198 270 223 291 229 303 211 289 198 247 176
+Polygon -13840069 true false 271 127 271 187 245 217 211 232 121 228 85 183 85 136 138 88 211 82 247 96
+Polygon -6459832 true false 99 136 103 134 128 109 132 128 118 145
+Polygon -6459832 true false 125 147 139 133 155 144 160 160 135 167
+Polygon -6459832 true false 99 141 116 147 127 168 111 179 92 160
+Polygon -6459832 true false 137 109 139 108 141 127 159 138 171 134 172 114 169 101
+Polygon -6459832 true false 162 146 172 142 193 147 196 169 183 183 169 179
+Polygon -6459832 true false 92 183 93 171 110 187 125 183 117 210
+Polygon -6459832 true false 130 176 162 168 162 186 150 213 128 212
+Polygon -6459832 true false 171 185 188 193 203 177 207 200 182 217
+Polygon -6459832 true false 165 192 170 193 175 215 157 215
+Polygon -6459832 true false 178 133 200 142 214 124 199 98 177 98 182 118
+Polygon -6459832 true false 209 98 230 104 251 119 257 136 245 148
+Polygon -6459832 true false 209 144 218 128 225 128 238 152 216 164 199 147
+Polygon -6459832 true false 205 164 223 169 242 155 248 169 234 184 220 190 207 180
+Polygon -6459832 true false 198 215 211 219 230 213 249 194 260 182 253 177 222 200 215 196 214 202
+Polygon -6459832 true false 247 157 259 144 259 172 252 172
+Circle -10899396 true false 151 58 12
+Circle -10899396 true false 273 104 12
+Circle -10899396 true false 277 89 12
+Circle -10899396 true false 258 103 12
+Circle -10899396 true false 138 90 12
+Circle -10899396 true false 173 52 12
+Circle -10899396 true false 139 72 12
+Circle -10899396 true false 6 141 12
+Circle -10899396 true false 35 135 12
+Circle -10899396 true false 19 130 12
+Circle -10899396 true false 183 214 12
+Circle -10899396 true false 166 249 12
+Circle -10899396 true false 145 238 12
+Circle -10899396 true false 134 217 12
+Circle -10899396 true false 164 88 12
+Circle -10899396 true false 285 204 12
+Circle -10899396 true false 267 202 12
+Circle -10899396 true false 216 87 12
+Circle -10899396 true false 191 86 12
+Circle -10899396 true false 50 123 12
+Circle -10899396 true false 63 132 12
+Circle -10899396 true false 30 122 12
+Circle -16777216 true false 50 139 10
+Polygon -16777216 true false 13 169 31 160 43 161 55 174 55 186 46 195 24 200 13 190 9 182
 
 wheel
 false
